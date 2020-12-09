@@ -19,7 +19,7 @@ def get_random_email_batch(n=EMAILS_BATCH_SIZE):
 
     batch = []
     for filename in filenames:
-        with open(filename, 'r', encoding='windows-1252') as f:
+        with open(filename, 'r', encoding='windows-1252', errors="ignore") as f:
             batch.append(f.read())
 
     return batch
