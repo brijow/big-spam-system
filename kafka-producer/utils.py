@@ -7,10 +7,11 @@ from glob import glob
 from urllib.request import urlretrieve
 
 
-EMAIL_META = [ (os.environ.get('2003_EASY_HAM_2_URL'), '2003_easy_ham.tar.bz2', '2003'),
-               (os.environ.get('2003_HARD_HAM_URL'), '2003_hard_ham.tar.bz2', '2003'),
-               (os.environ.get('2003_SPAM_2_URL'), '2003_spam2.tar.bz2', '2003'),
-               (os.environ.get('2005_SPAM_2_URL'), '2005_spam2.tar.bz2', '2005')]
+EMAIL_META = [(os.environ.get('2003_EASY_HAM_2_URL'), '2003_easy_ham.tar.bz2', '2003'),
+              (os.environ.get('2003_HARD_HAM_URL'),
+               '2003_hard_ham.tar.bz2', '2003'),
+              (os.environ.get('2003_SPAM_2_URL'), '2003_spam2.tar.bz2', '2003'),
+              (os.environ.get('2005_SPAM_2_URL'), '2005_spam2.tar.bz2', '2005')]
 
 # EMAIL_META = [ ("https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham_2.tar.bz2",
 #                 '2003_easy_ham.tar.bz2', '2003'),
@@ -21,6 +22,7 @@ EMAIL_META = [ (os.environ.get('2003_EASY_HAM_2_URL'), '2003_easy_ham.tar.bz2', 
 #                ("https://spamassassin.apache.org/old/publiccorpus/20050311_spam_2.tar.bz2",
 #                 '2005_spam2.tar.bz2', '2005')]
 
+
 def download_and_extract_email_data():
     for (url, filename, _) in EMAIL_META:
         _download_file(filename=filename, url=url)
@@ -29,12 +31,12 @@ def download_and_extract_email_data():
         _extract_bz2_data(filename=filename, dirname=dirname)
 
 
-def get_n_random_email_file_names(email_dir_regex='*', n):
+def get_n_random_email_file_names(n, email_dir_regex='*'):
     matching_email_dirs = _get_matching_email_dirs(email_dir_regex)
 
     matching_email_files = []
     for email_dir in matching_email_dirs:
-        matching_email_files.append(_get_email_file_names(email_dir_path, n))
+        matching_email_files.extend(_get_email_file_names(email_dir, n))
 
     n = min(n, len(matching_email_files))
     sample_files = random.sample(matching_email_files, n)
@@ -46,7 +48,8 @@ def _get_matching_email_dirs(email_dir_regex):
 
     Examples: "*ham*", "*spam*", "*easy_ham*", "*hard_ham*"
     """
-    email_dirs_paths = os.path.join(_get_data_dir(), "*", email_dir_regex + "/")
+    email_dirs_paths = os.path.join(
+        _get_data_dir(), "*", email_dir_regex + "/")
     all_email_dirs = glob(email_dirs_paths, recursive=True)
     return all_email_dirs
 
@@ -94,7 +97,8 @@ def _extract_bz2_data(filename, dirname, data_dir='./data'):
 
 def _get_data_dir(data_dir=None):
     if data_dir is None:
-        data_dir = os.environ.get("DATA_DIR", os.path.join("/usr", "app", "data"))
+        data_dir = os.environ.get(
+            "DATA_DIR", os.path.join("/usr", "app", "data"))
     data_dir = os.path.expanduser(data_dir)
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)

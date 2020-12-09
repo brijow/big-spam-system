@@ -7,7 +7,7 @@ import utils
 
 KAFKA_BROKER_URL = os.environ.get("KAFKA_BROKER_URL")
 EMAILS_TOPIC = os.environ.get("EMAILS_TOPIC")
-EMAILS_BATCH_SIZE = os.environ.get("EMAILS_BATCH_SIZE")
+EMAILS_BATCH_SIZE = int(os.environ.get("EMAILS_BATCH_SIZE"))
 SLEEP_TIME = 10
 
 
@@ -15,11 +15,11 @@ def get_random_email_batch(n=EMAILS_BATCH_SIZE):
     # allow user to provide an environment var for this process
     # to control the emails we're sampling. If not provided, sample randomly.
     email_dir_regex = os.environ.get("EMAIL_DIR_REGEX", "*")
-    filnames = utils.get_n_random_email_file_names(email_dir_regex, n)
+    filenames = utils.get_n_random_email_file_names(n, email_dir_regex)
 
     batch = []
-    for filename in filnames:
-        with open(filename, 'r') as f:
+    for filename in filenames:
+        with open(filename, 'r', encoding='windows-1252') as f:
             batch.append(f.read())
 
     return batch
@@ -36,7 +36,6 @@ def run():
         value_serializer=lambda x: json.dumps(x).encode('ascii'),
     )
 
-
     while True:
         email_batch = get_random_email_batch()
         producer.send(EMAILS_TOPIC, value=email_batch)
@@ -45,4 +44,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-
