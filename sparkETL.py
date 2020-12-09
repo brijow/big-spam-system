@@ -62,18 +62,19 @@ def main(inputs, output):
 		f.regexp_extract('value', sender_regex, 1).alias('sender'), \
 		f.regexp_extract('value', receiver_regex, 1).alias('receiver'), \
 		f.regexp_extract('value', subject_regex, 1).alias('subject'), \
-		f.regexp_extract('value', date_regex, 1).alias('datetime'), \
+		f.regexp_extract('value', date_regex, 1).alias('receive_date'), \
 		f.regexp_extract('value', body_regex, 1).alias('html_body'))\
 	.withColumn('id', uuid.uuid1())\
-    .withColumn('timestamp', toUnixTimestamp(now()))\
+    .withColumn('current_date', toDate(toUnixTimestamp(now()))\
 	.withColumn('body', html_to_plain_udf('html_body'))\
 	.withColumn('word_tokens', process_body_udf('body'))
     
     
+    #CREATE TABLE IF NOT EXISTS emails (current_date DATE, id UUID, sender TEXT, receiver TEXT, receive_date TEXT, subject TEXT, body TEXT, label TEXT, PRIMARY KEY (current_date, id));
     
-    #INSERT INTO emails (sender, id, timestamp, receiver, datetime, subject, body, label) VALUES ('John', 50554d6e-29bb-11e5-b345-feff819cdc9f, toUnixTimestamp(now()), 'john@example.com', 'money', '12-11-30', '[a,b,c]','spam' );
+    #INSERT INTO emails (current_date, id, sender, receiver, receive_date, subject, body, label) VALUES (toDate(toUnixTimestamp(now())), 50554d6e-29bb-11e5-b345-feff819cdc9f, 'John', 'john@example.com', '12-11-30', 'money', '[a,b,c]', 'spam');
 	
-	send_to_cassandra.select('sender', 'id', 'timestamp', 'receiver', 'subject', 'datetime', 'word_tokens').write.json(output, mode='overwrite')
+	send_to_cassandra.select('current_date', 'id', 'sender', 'receiver', 'receive_date', 'subject', 'word_tokens').write.json(output, mode='overwrite')
 	
 	#send_to_cassandra.write.format("org.apache.spark.sql.cassandra")\
 	#	.options(table = 'email', keyspace = 'email_database').save()
