@@ -8,7 +8,10 @@ services:
       KAFKA_BROKER_URL: broker:9092
       EMAILS_TOPIC: emails.topic
       EMAILS_BATCH_SIZE: 10
-      SPAM_URL: "http://untroubled.org/spam/1998.7z"
+      2003_EASY_HAM_2_URL: "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham_2.tar.bz2"
+      2003_HARD_HAM_URL: "https://spamassassin.apache.org/old/publiccorpus/20030228_hard_ham.tar.bz2"
+      2003_SPAM_2_URL: "https://spamassassin.apache.org/old/publiccorpus/20030228_spam_2.tar.bz2"
+      2005_SPAM_2_URL: "https://spamassassin.apache.org/old/publiccorpus/20050311_spam_2.tar.bz2"
 
 networks:
   default:
