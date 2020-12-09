@@ -1,6 +1,7 @@
 from pyspark import SparkConf, SparkContext
 import re, sys
 from pyspark.sql import SparkSession, functions, types
+import datetime
 
 cassandra_host = 'localhost'
 
@@ -11,7 +12,7 @@ def main(date_time_str):
     date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d')
     
     emails_df = spark.read.format("org.apache.spark.sql.cassandra").options(table="emails", keyspace="email_database").load()
-   
+    # clean up the records before the input date
     clean_df = emails_df.filter(emails_df['current_date'] > date_time_obj.date())
     clean_df.write.format("org.apache.spark.sql.cassandra").options(table="emails", keyspace="email_database").save()
     
