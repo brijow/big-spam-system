@@ -1,0 +1,43 @@
+Program Requirements:
+Docker
+	Test on 20.10.0 but should work on newer versions
+Apache Spark 2.4.6
+	Tested on 2.4.6 but should work on newer versions
+Cassandra
+	Tested on 3.11.9 but should work on new versions
+
+Python Requirements:
+	System tested on 3.5.6. Spark needs Python 3.7 or older to run
+
+Python Library Requirements:
+nltk
+	Install with pip install nltk. Doesn't seem to be available through conda
+simplified_scrappy
+	Install with pip install simplified_scrapy. Doesn't seem to available through conda
+
+System setup:
+Starting kafka on docker
+	docker network create kafka-network
+	cd path/to/bigspamproject/kafka
+	docker-compose up -d
+	cd ../kafka-producer
+	docker-compose up -d
+	docker ps -a (Make sure that these containers are up: kafka_broker_1, kafka-manager, and zookeeper)
+
+Starting Cassandra:
+	cassandra (start cassandra)
+	cd ../dbutils 
+	cqlsh create_database.cql (This will create the keyspace email_database" and table "emails" if they don't already exist)
+
+Starting SparkETL:
+	The input below assumes that sparkETL.py is in your working directory
+	spark-submit --packages datastax:spark-cassandra-connector:2.4.0-s_2.11,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.4 sparkETL.py
+
+	sparkETL.py shoud run and you should see the updated streams and is also going into Cassandra.
+	sparkETL.py shoud run for a while to population the database with some emails. 
+
+Starting SparkML.py
+	Same as SparkETL script with without Kafka package
+	spark-submit --packages datastax:spark-cassandra-connector:2.4.0-s_2.11 sparkML.py modelName
+	The output produces an accuracy score basd on a validation set.
+	
