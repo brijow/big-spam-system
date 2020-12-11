@@ -55,10 +55,14 @@ def process_email_body(email_body):
             result_list.append(word)
     return(result_list)
 
-def uuid ():
-    return (str(uuid.uuid4()))
+def write_to_cassandra(df, epoch_id):
+    df.write\
+    .format("org.apache.spark.sql.cassandra")\
+    .options(table = 'email', keyspace = 'email_database')\
+    .mode("append")\
+    .save()
     
-def main(inputs, output):
+def main():
     html_to_plain_udf = f.udf(simplify_doc_udf, types.StringType())
     process_body_udf = f.udf(process_email_body, types.ArrayType(types.StringType()))
     
@@ -86,22 +90,24 @@ def main(inputs, output):
         .withColumnRenamed('offset', 'id')\
         .withColumn('body', html_to_plain_udf('html_body'))\
         .withColumn('word_tokens', process_body_udf('body'))\
-        .withColumn('current_date', f.current_date())
+        .withColumn('current_date', f.current_date())\
+        .filter(f.size('word_tokens') != 0)
     
-    query = send_to_cassandra.select('current_date', 'id', 'sender', 'receiver', 'subject','receive_date', 'word_tokens').writeStream.outputMode('update').format('console').option('truncate', 'false').start()
+    query = send_to_cassandra\
+    .select('current_date', 'id', 'sender', 'receiver', 'subject','receive_date', 'word_tokens')\
+    .writeStream.outputMode('update').format('console').start()
     query.awaitTermination(300)
-
-    #send_to_cassandra.select('current_date', 'id', 'sender', 'label', 'receiver', 'receive_date', 'subject', 'word_tokens')\
-    #.filter(f.size('word_tokens') != 0)\
-    #.write.json(output, mode='overwrite')
-    send_to_cassandra.write.format("org.apache.spark.sql.cassandra")\
-       .options(table = 'email', keyspace = 'email_database').save()
+    
+    to_cassandra = send_to_cassandra\
+    .select('current_date', 'id', 'sender', 'receiver', 'subject','receive_date', 'word_tokens')\
+    .writeStream.outputMode('update')\
+    .foreachBatch(write_to_cassandra).start()
+    to_cassandra.awaitTermination(300)
+    
 
 
 if __name__ == '__main__':
-    inputs = sys.argv[1]
-    output = sys.argv[2]
     spark = SparkSession.builder.appName('email ETL') \
        .config('spark.cassandra.connection.host', cassandra_host).getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
-    main(inputs, output)
+    main()
