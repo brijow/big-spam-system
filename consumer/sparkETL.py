@@ -4,12 +4,14 @@ import nltk, nltk.stem.porter
 from simplified_scrapy.simplified_doc import SimplifiedDoc 
 from pyspark.sql import SparkSession, functions as f, types
 
-receiver_regex = r'To: ([^\n]+)'
-sender_regex = r'From:[^<]+<([^\n]+)>'
-subject_regex = r'Subject: ([^\n]+)'
-body_regex = r'\n\n([\H\n\s]*)'
-date_regex = r'Date: +([^\n]+)'
+
+receiver_regex = r'To\W+([\w@\d\._-]+)'
+sender_regex = r'From\W+([^\n\s]+)'
+subject_regex = r'Subject\W+([^\n\\]+)'
+body_regex = r'\\n\\n([\H\n\s]*)'
+date_regex = r'Date\W+(\w{3}, \d{1,2} \w{3} \d{4} \d{2}\:\d{2}\:\d{2})'
 cassandra_host = 'localhost'
+
 
 def simplify_doc_udf(html_text):
     doc = SimplifiedDoc(html_text)
@@ -60,35 +62,46 @@ def main(inputs, output):
     html_to_plain_udf = f.udf(simplify_doc_udf, types.StringType())
     process_body_udf = f.udf(process_email_body, types.ArrayType(types.StringType()))
     
-	###########For testing #delete afterwards#########
-    spam = spark.read.text("DontCommit/samplemail/spam", wholetext = True).withColumn('label', f.lit(1))
-    ham = spark.read.text("DontCommit/samplemail/ham", wholetext = True).withColumn('label', f.lit(0))
-    raw_email = spam.union(ham)
-    ###########raw_email = spark.read.text(inputs, wholetext = True)#################
-    send_to_cassandra = raw_email.select(\
+    #spam = spark.readStream.format('kafka')\
+    #        .option('kafka.bootstrap.servers', '172.17.0.1:9092')\
+    #        .option('subscribe', 'emails.topic').load()\
+    #        .select(f.col('value').cast('string'), 'offset')\
+    #        .withColumn('label', f.lit(1))
+    ham = spark.readStream.format('kafka')\
+            .option('kafka.bootstrap.servers', '172.17.0.1:9092')\
+            .option('subscribe', 'emails.topic').load()\
+            .select(f.col('value').cast('string'), 'offset')\
+            .withColumn('label', f.lit(0))
+            
+    spam_on_ham = ham  #spam.union(ham)
+    
+    send_to_cassandra = spam_on_ham.select(\
+        'offset', \
         'label', \
         f.regexp_extract('value', sender_regex, 1).alias('sender'), \
         f.regexp_extract('value', receiver_regex, 1).alias('receiver'), \
         f.regexp_extract('value', subject_regex, 1).alias('subject'), \
         f.regexp_extract('value', date_regex, 1).alias('receive_date'), \
         f.regexp_extract('value', body_regex, 1).alias('html_body'))\
-    .withColumn('id', row_number())\
-    .withColumn('body', html_to_plain_udf('html_body'))\
-    .withColumn('word_tokens', process_body_udf('body'))\
-    .withColumn('current_date', f.current_date())
+        .withColumnRenamed('offset', 'id')\
+        .withColumn('body', html_to_plain_udf('html_body'))\
+        .withColumn('word_tokens', process_body_udf('body'))\
+        .withColumn('current_date', f.current_date())
     
-    
-    send_to_cassandra.select('current_date', 'id', 'sender', 'label', 'receiver', 'receive_date', 'subject', 'word_tokens')\
-    .filter(f.size('word_tokens') != 0)\
-    .write.json(output, mode='overwrite')
-    #send_to_cassandra.write.format("org.apache.spark.sql.cassandra")\
-    #   .options(table = 'email', keyspace = 'email_database').save()
+    query = send_to_cassandra.select('current_date', 'id', 'sender', 'receiver', 'subject','receive_date', 'word_tokens').writeStream.outputMode('update').format('console').option('truncate', 'false').start()
+    query.awaitTermination(300)
+
+    #send_to_cassandra.select('current_date', 'id', 'sender', 'label', 'receiver', 'receive_date', 'subject', 'word_tokens')\
+    #.filter(f.size('word_tokens') != 0)\
+    #.write.json(output, mode='overwrite')
+    send_to_cassandra.write.format("org.apache.spark.sql.cassandra")\
+       .options(table = 'email', keyspace = 'email_database').save()
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
     output = sys.argv[2]
-    spark = SparkSession.builder.appName('email ETL')\
-        .config('spark.cassandra.connection.host', cassandra_host).getOrCreate()
+    spark = SparkSession.builder.appName('email ETL') \
+       .config('spark.cassandra.connection.host', cassandra_host).getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
     main(inputs, output)
