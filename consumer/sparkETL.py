@@ -61,12 +61,20 @@ def main(inputs, output):
     html_to_plain_udf = f.udf(simplify_doc_udf, types.StringType())
     process_body_udf = f.udf(process_email_body, types.ArrayType(types.StringType()))
     
-    messages = spark.readStream.format('kafka')\
+    #spam = spark.readStream.format('kafka')\
+    #        .option('kafka.bootstrap.servers', '172.17.0.1:9092')\
+    #        .option('subscribe', 'emails.topic').load()\
+    #        .select(f.col('value').cast('string'), 'offset')\
+    #        .withColumn('label', f.lit(1))
+    ham = spark.readStream.format('kafka')\
             .option('kafka.bootstrap.servers', '172.17.0.1:9092')\
-            .option('subscribe', 'emails.topic').load()
-    raw_email = messages.select(messages['value'].cast('string'), 'offset').withColumn('label', f.lit(1))
+            .option('subscribe', 'emails.topic').load()\
+            .select(f.col('value').cast('string'), 'offset')\
+            .withColumn('label', f.lit(0))
+            
+    spam_on_ham = ham  #spam.union(ham)
     
-    send_to_cassandra = raw_email.select(\
+    send_to_cassandra = spam_on_ham.select(\
         'offset', \
         'label', \
         f.regexp_extract('value', sender_regex, 1).alias('sender'), \
@@ -79,22 +87,20 @@ def main(inputs, output):
         .withColumn('word_tokens', process_body_udf('body'))\
         .withColumn('current_date', f.current_date())
     
-    query = send_to_cassandra.select('id', 'sender', 'receiver', 'subject','receive_date', 'word_tokens').writeStream.outputMode('update').format('console').option('truncate', 'false').start()
-    query.awaitTermination(10)
+    query = send_to_cassandra.select('current_date', 'id', 'sender', 'receiver', 'subject','receive_date', 'word_tokens').writeStream.outputMode('update').format('console').option('truncate', 'false').start()
+    query.awaitTermination(300)
 
     #send_to_cassandra.select('current_date', 'id', 'sender', 'label', 'receiver', 'receive_date', 'subject', 'word_tokens')\
     #.filter(f.size('word_tokens') != 0)\
     #.write.json(output, mode='overwrite')
-    #send_to_cassandra.write.format("org.apache.spark.sql.cassandra")\
-    #   .options(table = 'email', keyspace = 'email_database').save()
+    send_to_cassandra.write.format("org.apache.spark.sql.cassandra")\
+       .options(table = 'email', keyspace = 'email_database').save()
 
 
 if __name__ == '__main__':
     inputs = sys.argv[1]
     output = sys.argv[2]
-    # spark = SparkSession.builder.appName('email ETL')\
-    #     .config('spark.cassandra.connection.host', cassandra_host).getOrCreate()
-    spark = SparkSession.builder.appName('Spark Cassandra example') \
+    spark = SparkSession.builder.appName('email ETL') \
        .config('spark.cassandra.connection.host', cassandra_host).getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
     main(inputs, output)

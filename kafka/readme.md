@@ -74,7 +74,7 @@ $ pyspark  --packages org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.4
 ```
 ```python
 messages = spark.readStream.format('kafka').\
-    option('kafka.bootstrap.servers', '172.17.0.1:32775').\
+    option('kafka.bootstrap.servers', '172.17.0.1:9092').\
     option('subscribe', 'emails.topic').load()
 
 values = messages.select(messages['value'].cast('string'))
