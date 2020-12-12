@@ -5,7 +5,7 @@ Kafka front end is available on localhost:9000 when the broker is running.
 
 Download from [Emails](https://spamassassin.apache.org/old/publiccorpus/) .
 
-## Priject Summury
+## Project Summary
 
 In this project we focus primarily on designing a scalable system to support near-online learning applications involving high-throughput, computationally expensive data stream processing in near real time.  Secondarily we focus on building a spam detector model that utilises this framework. We make use of state-of-the-art components from the Apache ecosystem to achieve highly scalable and fault tolerant data ingestion, streaming, feature engineering, storage, and model training. In addition to the end-to-end spam detection system, we also consider practical deployment and development strategies for building such cloud-destined, distributed applications.
 
