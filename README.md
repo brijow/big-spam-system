@@ -1,6 +1,10 @@
 Kafka front end is available on localhost:9000 when the broker is running.
 # Scalable Real-time Streaming ETL for Spam Detection
 
+##
+Link to video presentation
+https://drive.google.com/file/d/1jc8D81MLTnuS2ypo7wInhKrRuUOAM3pu/view?usp=sharing
+
 ## Dataset
 
 Download from [Emails](https://spamassassin.apache.org/old/publiccorpus/) .
