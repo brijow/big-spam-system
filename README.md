@@ -61,12 +61,12 @@ This is final project of SFU CMPT 732 coursework
 
 - create_database.cql
 	- Create keyspace: email_database
-    - Create table: emails with columns (current_date, id, sender, receiver, receive_date, subject, word_tokens list, label)
-    
+    - Create table: emails with columns (current_date, id, sender, receiver, receive_date, subject, word_tokens list, label)   
 - clean_table.cql
 	- Clean the data rows in Cassandra table using cqlsh based on input date('2020-12-11').
 
 ### ml/
+
 - sparkML.py
     - Create a pyspark.ml pipeline for Classification.
 
