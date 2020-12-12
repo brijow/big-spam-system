@@ -24,7 +24,7 @@ def main(model_name):
     svc_model.write().overwrite().save(model_name)
     prediction = svc_model.transform(validation)
     accuracy = evaluator.evaluate(prediction)
-    print('Validation score: %g' % (accuracy, ))
+    print('\n\n\n               Validation score: %g                \n\n\n' % (accuracy, ))
 
 
 if __name__ == '__main__':
