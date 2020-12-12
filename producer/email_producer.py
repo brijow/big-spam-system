@@ -6,22 +6,21 @@ from kafka import KafkaProducer
 import utils
 
 KAFKA_BROKER_URL = os.environ.get("KAFKA_BROKER_URL")
-EMAILS_TOPIC = os.environ.get("EMAILS_TOPIC")
-EMAILS_BATCH_SIZE = int(os.environ.get("EMAILS_BATCH_SIZE"))
-SLEEP_TIME = 10
+TOPIC_NAME = os.environ.get("TOPIC_NAME")
+BATCH_SIZE = int(os.environ.get("BATCH_SIZE"))
+SLEEP_TIME = int(os.environ.get("SLEEP_TIME", 10))
+DATA_DIR_REGEX = os.environ.get("DATA_DIR_REGEX", "*")
 
 
-def get_random_email_batch(n=EMAILS_BATCH_SIZE):
+def get_random_email_batch(n=BATCH_SIZE):
     # allow user to provide an environment var for this process
     # to control the emails we're sampling. If not provided, sample randomly.
-    email_dir_regex = os.environ.get("EMAIL_DIR_REGEX", "*")
-    filenames = utils.get_n_random_email_file_names(n, email_dir_regex)
+    filenames = utils.get_n_random_email_file_names(n, DATA_DIR_REGEX)
 
     batch = []
     for filename in filenames:
         with open(filename, 'r', encoding='windows-1252', errors="ignore") as f:
             batch.append(f.read())
-
     return batch
 
 
@@ -38,7 +37,7 @@ def run():
 
     while True:
         email_batch = get_random_email_batch()
-        producer.send(EMAILS_TOPIC, value=email_batch)
+        producer.send(TOPIC_NAME, value=email_batch)
         sleep(SLEEP_TIME)
 
 
