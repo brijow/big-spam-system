@@ -1,9 +1,9 @@
 Kafka front end is available on localhost:9000 when the broker is running.
 # Scalable Real-time Streaming ETL for Spam Detection
-
+<!-- 
 ##
 Link to video presentation
-https://drive.google.com/file/d/1jc8D81MLTnuS2ypo7wInhKrRuUOAM3pu/view?usp=sharing
+https://drive.google.com/file/d/1jc8D81MLTnuS2ypo7wInhKrRuUOAM3pu/view?usp=sharing -->
 
 ## Dataset
 
@@ -25,7 +25,7 @@ This is final project of SFU CMPT 732 coursework
 
 * How to run instrucntion can be found inside `RUNNING.MD`
 * More details of the project can be found at submitted report
-* There is a video demo can be found at [YouTube](https://www.youtube.com/playlist?list=PLvlqrqDivHNKc27I12Z11kXzHvzewyrTu)
+<!-- * There is a video demo can be found at [YouTube](https://www.youtube.com/playlist?list=PLvlqrqDivHNKc27I12Z11kXzHvzewyrTu) -->
 
 ## Files Intruduction:
 
